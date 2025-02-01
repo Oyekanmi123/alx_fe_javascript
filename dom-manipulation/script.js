@@ -53,6 +53,7 @@ function createAddQuoteForm() {
 window.onload = function() {
     createAddQuoteForm(); // This will add the form when the page loads.
     loadQuotes() //This will load stored quotes in the local storage when the page loads.
+    syncQuotes();
     populateCategories(); // Populate categories
     restoreLastSelectedFilter(); // Restore previous category selection
     syncWithServer(); // Sync with server on page load
@@ -201,6 +202,41 @@ async function fetchQuotesFromServer() {
         console.error("Error fetching quotes:", error);
     }
 }
+
+async function syncQuotes() {
+    try {
+        const response = await fetch(SERVER_URL);
+        const serverQuotes = await response.json();
+
+        if (!Array.isArray(serverQuotes)) {
+            console.error("Invalid data from server");
+            return;
+        }
+
+        // Convert server quotes into your existing structure
+        const formattedServerQuotes = serverQuotes.map(q => ({
+            text: q.body || q.text, // Handle different formats
+            category: q.category || "Unknown"
+        }));
+
+        // Merge without duplicating existing quotes
+        const localTexts = new Set(quotes.map(q => q.text));
+        const newQuotes = formattedServerQuotes.filter(q => !localTexts.has(q.text));
+
+        if (newQuotes.length > 0) {
+            quotes = [...quotes, ...newQuotes]; // Add only new quotes
+            saveQuotes(); // Update local storage
+            console.log("Synced new quotes from server");
+        } else {
+            console.log("No new quotes to sync");
+        }
+
+    } catch (error) {
+        console.error("Error syncing quotes:", error);
+    }
+}
+
+setInterval(syncQuotes, 10000); // Sync every 10 seconds
 
 async function addQuoteToServer(quoteText, category) {
     const newQuote = { text: quoteText, category: category };
