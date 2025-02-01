@@ -226,6 +226,7 @@ async function syncQuotes() {
         if (newQuotes.length > 0) {
             quotes = [...quotes, ...newQuotes]; // Add only new quotes
             saveQuotes(); // Update local storage
+            showNotification("Quotes synced with server!");
             console.log("Synced new quotes from server");
         } else {
             console.log("No new quotes to sync");
@@ -233,6 +234,7 @@ async function syncQuotes() {
 
     } catch (error) {
         console.error("Error syncing quotes:", error);
+        showNotification("Error syncing quotes!");
     }
 }
 
@@ -296,3 +298,13 @@ function notifyUser(message) {
 
 notifyUser("New quotes synced from the server!");
 
+function showNotification(message) {
+    const notification = document.getElementById("notification");
+    notification.innerText = message;
+    notification.style.display = "block";
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.style.display = "none";
+    }, 3000);
+}
