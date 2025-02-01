@@ -55,6 +55,7 @@ window.onload = function() {
     loadQuotes() //This will load stored quotes in the local storage when the page loads.
     populateCategories(); // Populate categories
     restoreLastSelectedFilter(); // Restore previous category selection
+    syncWithServer(); // Sync with server on page load
 };
 
 function addQuote(){
@@ -179,3 +180,60 @@ function restoreLastSelectedFilter() {
         filterQuotes(); // Apply filter on page load
     }
 };
+
+//Fetching Quotes from the Server
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
+
+async function fetchQuotesFromServer(){
+    try{
+        const response = await fetch (SERVER_URL);
+        const serverQuotes = await response.json;
+
+        // Assuming the response format includes text and category
+        const formattedQuotes = serverQuotes.map(q =>({
+            text: q.title, //JSON placeholder uses title
+            category: "General"
+        }));
+
+        mergeQuotesWithServer(formattedQuotes);
+    }catch (error){
+        console.log("Error fetching server quotes:", error);
+    }
+}
+
+async function syncWithServer() {
+    await fetchQuotesFromServer(); // Get latest server quotes
+    saveQuotes(); // Save updated list to local storage
+}
+
+// Periodically sync every 30 seconds
+setInterval(syncWithServer, 30000); 
+
+function mergeQuotesWithServer(serverQuotes) {
+    const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
+
+    // Merge quotes without duplicates
+    const mergedQuotes = [...new Map([...serverQuotes, ...localQuotes].map(q => [q.text, q])).values()];
+
+    localStorage.setItem("quotes", JSON.stringify(mergedQuotes));
+    populateCategories(); // Update dropdown
+    filterQuotes(); // Refresh UI
+}
+
+function notifyUser(message) {
+    const notification = document.createElement("div");
+    notification.textContent = message;
+    notification.style.position = "fixed";
+    notification.style.top = "10px";
+    notification.style.right = "10px";
+    notification.style.padding = "10px";
+    notification.style.background = "orange";
+    notification.style.color = "white";
+    notification.style.borderRadius = "5px";
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.remove(), 5000); // Auto-remove after 5 seconds
+};
+
+notifyUser("New quotes synced from the server!");
+
