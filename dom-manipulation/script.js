@@ -51,7 +51,9 @@ function createAddQuoteForm() {
 }
 
 window.onload = function() {
-    createAddQuoteForm(); // This will add the form when the page loads
+    createAddQuoteForm(); // This will add the form when the page loads.
+    loadQuotes() //This will load stored quotes in the local storage when the page loads.
+    
 };
 
 function addQuote(){
@@ -64,9 +66,63 @@ function addQuote(){
     }
     
     quotes.push({text: newQuoteCategory, category: newQuoteCategory});
+
+    // Save to local storage
+    saveQuotes();
+
+    //Clear input fields
     document.getElementById("newQuoteText").value = " ";
     document.getElementById("newQuoteCategory").value = " ";
     alert("Quote added successfully!");
 
+    // Refresh the displayed quote
     showRandomQuote();
 };
+
+//Function to save quotes
+function saveQuotes(){
+    localStorage.setItem("quotes", JSON.stringify(quotes));
+};
+
+//Function to load quotes from local storage
+function loadQuotes() {
+    const storedQuotes = localStorage.getItem("quotes");
+    if (storedQuotes){
+        quotes = JSON.parse(storedQuotes);
+    }
+}
+
+//JSON Export
+function exportToJsonFile() {
+    const dataStr = JSON.stringify(quotes, null, 2);
+    const blob = new Blob([datastr], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href = url;
+    downloadLink.download = "quotes.json";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
+//JSON Import
+function importFromJsonFile(event){
+    const fileReader = new FileReader();
+    fileReader.onload = function (event){
+        try{
+            const importedQuotes = JSON.parse(event.target.result);
+            if (!Array.isArray(importedQuotes)) throw new Error ("Invalid File Format");
+
+            quotes.push(...importedQuotes);
+            saveQuotes();
+            alert("Quotes imported successfully!");
+        } catch (error){
+            alert("Error importing JSON file. Make sure the format is correct.");  
+        }
+
+        fileReader.readAsText(event.target.files[0]);
+    }
+
+}
+
