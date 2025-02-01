@@ -72,6 +72,8 @@ function addQuote(){
     // Save to local storage
     saveQuotes();
 
+    addQuoteToServer(newQuoteText, newQuoteCategory); //Send to server
+
      // Update categories
      populateCategories();
 
@@ -184,20 +186,41 @@ function restoreLastSelectedFilter() {
 //Fetching Quotes from the Server
 const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
 
-async function fetchQuotesFromServer(){
-    try{
-        const response = await fetch (SERVER_URL);
-        const serverQuotes = await response.json;
+async function fetchQuotesFromServer() {
+    try {
+        const response = await fetch(SERVER_URL);
+        const data = await response.json();
 
-        // Assuming the response format includes text and category
-        const formattedQuotes = serverQuotes.map(q =>({
-            text: q.title, //JSON placeholder uses title
-            category: "General"
-        }));
+        if (Array.isArray(data)) {
+            quotes = [...quotes, ...data.map(q => ({ text: q.body, category: "Unknown" }))];
+            saveQuotes(); // Save to local storage
+        }
 
-        mergeQuotesWithServer(formattedQuotes);
-    }catch (error){
-        console.log("Error fetching server quotes:", error);
+        console.log("Quotes fetched successfully:", quotes);
+    } catch (error) {
+        console.error("Error fetching quotes:", error);
+    }
+}
+
+async function addQuoteToServer(quoteText, category) {
+    const newQuote = { text: quoteText, category: category };
+
+    try {
+        const response = await fetch(SERVER_URL, {
+            method: "POST", //Required for posting
+            headers: {
+                "Content-Type": "application/json" //Required headers
+            },
+            body: JSON.stringify(newQuote) //Convert object to JSON
+        });
+
+        const result = await response.json();
+        console.log("Quote added to server:", result);
+
+        alert("Quote successfully added to server!");
+
+    } catch (error) {
+        console.error("Error posting quote:", error);
     }
 }
 
